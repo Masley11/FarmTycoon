@@ -10,7 +10,7 @@ const WEATHER_VIS = {
 
 export function WeatherWidget({ weather }) {
   if (!weather) return null;
-  const vis = WEATHER_VIS[weather.condition] || WEATHER_VIS.sunny;
+  const vis = WEATHER_VIS[weather?.condition] || WEATHER_VIS.sunny;
   const Icon = vis.icon;
 
   return (
@@ -27,7 +27,7 @@ export function WeatherWidget({ weather }) {
           <Icon className={`h-12 w-12 ${vis.color}`} strokeWidth={1.5} />
           <div>
             <div className="font-display text-3xl font-semibold text-stone-900 leading-none">
-              {weather.temperature_c}°C
+              {weather?.temperature_c ?? "—"}°C
             </div>
             <div className="text-sm text-stone-600 mt-1">{vis.label}</div>
           </div>
@@ -38,14 +38,14 @@ export function WeatherWidget({ weather }) {
               <Droplets className="h-3 w-3" strokeWidth={1.7} />
               Humidité
             </div>
-            <div className="text-sm font-semibold text-stone-900 mt-1">{weather.humidity}%</div>
+            <div className="text-sm font-semibold text-stone-900 mt-1">{weather?.humidity ?? "—"}%</div>
           </div>
           <div>
             <div className="flex items-center gap-1.5 text-stone-500 text-[10px] uppercase tracking-wide">
               <Wind className="h-3 w-3" strokeWidth={1.7} />
               Vent
             </div>
-            <div className="text-sm font-semibold text-stone-900 mt-1">{weather.wind_kmh} km/h</div>
+            <div className="text-sm font-semibold text-stone-900 mt-1">{weather?.wind_kmh ?? "—"} km/h</div>
           </div>
           <div>
             <div className="flex items-center gap-1.5 text-stone-500 text-[10px] uppercase tracking-wide">
@@ -53,7 +53,7 @@ export function WeatherWidget({ weather }) {
               Sécheresse
             </div>
             <div className="text-sm font-semibold text-stone-900 mt-1">
-              {Math.round((weather.drought_index || 0) * 100)}%
+              {Math.round((weather?.drought_index || 0) * 100)}%
             </div>
           </div>
         </div>

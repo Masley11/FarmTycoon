@@ -27,8 +27,8 @@ export function AlertsPanel({ alerts }) {
             Aucune alerte. Tout est sous contrôle.
           </div>
         )}
-        {alerts?.map((a, i) => {
-          const sev = SEV[a.severity] || SEV.info;
+        {alerts?.filter(Boolean).map((a, i) => {
+          const sev = SEV[a?.severity] || SEV.info;
           const Icon = sev.Icon;
           return (
             <div
@@ -38,8 +38,8 @@ export function AlertsPanel({ alerts }) {
             >
               <Icon className={`h-4 w-4 mt-0.5 ${sev.color}`} strokeWidth={1.8} />
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold text-stone-900 truncate">{a.title}</div>
-                <div className="text-xs text-stone-600 mt-0.5">{a.detail}</div>
+                <div className="text-sm font-semibold text-stone-900 truncate">{a?.title || "Alerte"}</div>
+                <div className="text-xs text-stone-600 mt-0.5">{a?.detail || ""}</div>
               </div>
             </div>
           );
