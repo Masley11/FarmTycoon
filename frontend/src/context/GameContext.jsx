@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
-import { fetchGameState } from "@/lib/api";
+import { useNavigate } from "react-router-dom";
+import { fetchGameState, getToken } from "@/lib/api";
 import { claimMission } from "@/lib/missions";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 const GameContext = createContext(null);
