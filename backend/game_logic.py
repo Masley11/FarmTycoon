@@ -258,15 +258,27 @@ def _finalize_passive_missions(state: dict[str, Any]) -> None:
 def now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
+def parse_tick_datetime(value: Any) -> datetime | None:
+    """Normalise last_tick_at depuis MongoDB (Date) ou ancien ISO string."""
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    if isinstance(value, str) and value:
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+        except ValueError:
+            return None
+    return None
+
 # ── DEFAULT STATE ─────────────────────────────────────────────────────────────
 def default_game_state() -> dict[str, Any]:
-    ts = now_utc().isoformat()
+    ts = now_utc()
     return {
         "id": "global",
         "cash": STARTING_CASH,
         "day": 1,
         "last_tick_at": ts,
-        "created_at": ts,
+        "created_at": ts.isoformat(),
         "water": 500.0, "fuel": 300.0, "electricity": 1000.0,
         "fertilizer_chemical": 200.0, "fertilizer_bio": 0.0,
         "fertilizer_premium": 0.0, "herbicide": 30.0,
@@ -562,9 +574,9 @@ def process_ticks(state: dict[str, Any], parcels: list[dict[str, Any]], days_to_
     return {"days_processed": days_to_advance, "activities": activities}
 
 def compute_pending_days(state: dict[str, Any]) -> int:
-    last_iso = state.get("last_tick_at")
-    if not last_iso: return 0
-    elapsed = (now_utc() - datetime.fromisoformat(last_iso)).total_seconds()
+    last_tick_at = parse_tick_datetime(state.get("last_tick_at"))
+    if not last_tick_at: return 0
+    elapsed = (now_utc() - last_tick_at).total_seconds()
     return max(0, int(elapsed // SECONDS_PER_GAME_DAY))
 
 # ── ALERTS ────────────────────────────────────────────────────────────────────

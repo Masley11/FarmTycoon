@@ -32,9 +32,22 @@ api.interceptors.request.use((config) => {
 // Intercepteur global d'erreurs — silencieux pour les GET de polling,
 // toast pour les actions utilisateur (POST/PUT/DELETE).
 let lastErrorAt = 0;
+const markRestartingError = (error) => {
+  const status = error.response?.status;
+  const data = error.response?.data;
+  const noUsableResponse = !error.response;
+  const serverFallback = data?.fallback || data?.error === "SERVER_RESTARTING";
+  const invalidJsonLike = typeof data === "string" && data.trim().startsWith("<");
+  if (noUsableResponse || serverFallback || invalidJsonLike || status >= 500) {
+    error.isServerRestarting = true;
+  }
+  return error;
+};
+
 api.interceptors.response.use(
   (res) => res,
   (error) => {
+    markRestartingError(error);
     const status = error.response?.status;
     const method = (error.config?.method || "get").toLowerCase();
     const isMutation = method !== "get";
@@ -57,6 +70,7 @@ api.interceptors.response.use(
       const msg =
         error.response?.data?.detail ||
         error.response?.data?.message ||
+        (error.isServerRestarting ? "Serveur en cours de redémarrage — réessayez dans quelques secondes." : null) ||
         (error.code === "ECONNABORTED" ? "Délai dépassé — réessayez." : "Erreur réseau");
       toast.error(msg);
     }

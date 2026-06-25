@@ -16,10 +16,11 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 import logging
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any
 
-from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -49,6 +50,19 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("farmtycoon")
 
+@app.exception_handler(Exception)
+async def unexpected_error_handler(request: Request, exc: Exception):
+    logger.exception("Erreur API non gérée sur %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=503,
+        content={
+            "ok": False,
+            "fallback": True,
+            "error": "SERVER_RESTARTING",
+            "detail": "Serveur en cours de redémarrage. Réessayez dans quelques secondes.",
+        },
+    )
+
 # ── Spécialisations ───────────────────────────────────────────────────────────
 SPECIALIZATIONS = {
     "cerealier":  {"name": "Céréalier",   "growth_mult": 1.10, "upgrade_mult": 1.00, "sell_mult": 1.00},
@@ -72,6 +86,15 @@ async def _load_parcels(user_id: str) -> list[dict[str, Any]]:
 async def _save_state(user_id: str, state: dict[str, Any]) -> None:
     state["user_id"] = user_id
     await db.game_state.replace_one({"user_id": user_id}, state, upsert=True)
+
+async def _persist_tick_clock(user_id: str, tick_at: datetime) -> None:
+    """Persiste l'horloge du jeu directement dans MongoDB, sans état mémoire global."""
+    tick_at = tick_at if tick_at.tzinfo else tick_at.replace(tzinfo=timezone.utc)
+    await db.game_state.update_one(
+        {"user_id": user_id},
+        {"$set": {"last_tick_at": tick_at}},
+        upsert=True,
+    )
 
 async def _save_parcels(user_id: str, parcels: list[dict[str, Any]]) -> None:
     for p in parcels:
@@ -108,22 +131,17 @@ async def _log_activity(user_id: str, message: str, type_: str = "info", day: in
 async def _auto_tick(user_id: str, state, parcels):
     _ensure_missions(state)
 
-    # Filet de sécurité : si last_tick_at est absent/corrompu, on l'initialise
-    # à maintenant et on persiste tout de suite — sinon compute_pending_days
-    # retournerait 0 en boucle et le temps ne s'écoulerait jamais.
-    last_iso = state.get("last_tick_at")
-    valid = False
-    if isinstance(last_iso, str) and last_iso:
-        try:
-            datetime.fromisoformat(last_iso)
-            valid = True
-        except Exception:
-            valid = False
-    if not valid:
-        state["last_tick_at"] = gl.now_utc().isoformat()
+    # Lecture explicite depuis MongoDB : aucune horloge de jeu ne dépend d'une
+    # variable de processus, donc un redémarrage Render ne réinitialise rien.
+    tick_doc = await db.game_state.find_one({"user_id": user_id}, {"_id": 0, "last_tick_at": 1})
+    last_tick_at = gl.parse_tick_datetime((tick_doc or {}).get("last_tick_at") or state.get("last_tick_at"))
+    if not last_tick_at:
+        last_tick_at = gl.now_utc()
+        state["last_tick_at"] = last_tick_at
         await _save_state(user_id, state)
         return state, parcels, 0
 
+    state["last_tick_at"] = last_tick_at
     pending = gl.compute_pending_days(state)
     days    = min(pending, 30)
     if days > 0:
@@ -135,13 +153,13 @@ async def _auto_tick(user_id: str, state, parcels):
                     p["growth"] = min(100, round(p["growth"] * growth_mult, 2))
         # Avance last_tick_at de N * SECONDS_PER_GAME_DAY (au lieu de "now")
         # pour ne pas perdre les fractions de seconde accumulées.
-        from datetime import timedelta
-        prev = datetime.fromisoformat(state["last_tick_at"])
-        state["last_tick_at"] = (prev + timedelta(seconds=days * gl.SECONDS_PER_GAME_DAY)).isoformat()
+        state["last_tick_at"] = last_tick_at + timedelta(seconds=days * gl.SECONDS_PER_GAME_DAY)
         for act in summary["activities"]:
             await _log_activity(user_id, act["message"], act["type"], act["day"])
         await _save_state(user_id, state)
         await _save_parcels(user_id, parcels)
+    else:
+        await _persist_tick_clock(user_id, last_tick_at)
     gl.update_mission_progress(state)
     return state, parcels, days
 
@@ -305,7 +323,7 @@ async def force_tick(user_id: str = Depends(require_company)):
     state   = await _load_state(user_id) or gl.default_game_state()
     parcels = await _load_parcels(user_id) or gl.default_parcels()
     summary = gl.process_ticks(state, parcels, 1)
-    state["last_tick_at"] = gl.now_utc().isoformat()
+    state["last_tick_at"] = gl.now_utc()
     for act in summary["activities"]:
         await _log_activity(user_id, act["message"], act["type"], act["day"])
     await _save_state(user_id, state)
@@ -346,52 +364,68 @@ async def buy_parcel(parcel_id: str, user_id: str = Depends(require_company)):
 
 @api_router.post("/parcels/{parcel_id}/plant")
 async def plant_crop(parcel_id: str, payload: PlantRequest, user_id: str = Depends(require_company)):
-    if payload.crop_type not in gl.CROP_CATALOG:
-        raise HTTPException(400, "Type de culture inconnu")
-    state   = await _load_state(user_id)
-    parcels = await _load_parcels(user_id)
-    state, parcels, _ = await _auto_tick(user_id, state, parcels)
+    try:
+        if payload.crop_type not in gl.CROP_CATALOG:
+            raise HTTPException(400, "Type de culture inconnu")
+        state   = await _load_state(user_id)
+        parcels = await _load_parcels(user_id)
+        if not state:
+            raise HTTPException(409, "Aucune exploitation active")
+        state, parcels, _ = await _auto_tick(user_id, state, parcels)
 
-    level_info     = gl.xp_to_level(state.get("xp", 0))
-    crop_min_level = gl.CROP_CATALOG[payload.crop_type].get("min_level", 1)
-    if level_info["level"] < crop_min_level:
-        raise HTTPException(400, f"Niveau {crop_min_level} requis (vous êtes niveau {level_info['level']})")
+        level_info     = gl.xp_to_level(state.get("xp", 0))
+        crop_min_level = gl.CROP_CATALOG[payload.crop_type].get("min_level", 1)
+        if level_info["level"] < crop_min_level:
+            raise HTTPException(400, f"Niveau {crop_min_level} requis (vous êtes niveau {level_info['level']})")
 
-    season_info   = gl.day_to_season_info(state["day"])
-    out_of_season = not gl.is_crop_in_season(payload.crop_type, season_info["season_key"])
+        season_info   = gl.day_to_season_info(state["day"])
+        out_of_season = not gl.is_crop_in_season(payload.crop_type, season_info["season_key"])
 
-    parcel = next((p for p in parcels if p["id"] == parcel_id), None)
-    if not parcel:          raise HTTPException(404, "Parcelle introuvable")
-    if not parcel["owned"]: raise HTTPException(400, "Parcelle non détenue")
-    if parcel["crop_type"]: raise HTTPException(400, "Une culture est déjà en place")
+        parcel = next((p for p in parcels if p["id"] == parcel_id), None)
+        if not parcel:          raise HTTPException(404, "Parcelle introuvable")
+        if not parcel["owned"]: raise HTTPException(400, "Parcelle non détenue")
+        if parcel["crop_type"]: raise HTTPException(400, "Une culture est déjà en place")
 
-    crop = gl.CROP_CATALOG[payload.crop_type]
-    cost = crop["seed_cost_per_ha"] * parcel["size_ha"]
-    if state["cash"] < cost:
-        raise HTTPException(400, "Trésorerie insuffisante pour les semences")
+        crop = gl.CROP_CATALOG[payload.crop_type]
+        cost = crop["seed_cost_per_ha"] * parcel["size_ha"]
+        if state["cash"] < cost:
+            raise HTTPException(400, "Trésorerie insuffisante pour les semences")
 
-    state["cash"]              -= cost
-    parcel["crop_type"]         = payload.crop_type
-    parcel["planted_day"]       = state["day"]
-    parcel["growth"]            = 0
-    parcel["weed_level"]        = 0
-    parcel["fertilizer_boost"]  = 0
-    parcel["soil_moisture"]     = max(parcel["soil_moisture"], 55)
-    parcel["expected_yield"]    = round(crop["yield_per_ha"] * parcel["size_ha"], 2)
-    _bump_stat(state, "plantings")
+        state["cash"]              -= cost
+        parcel["crop_type"]         = payload.crop_type
+        parcel["planted_day"]       = state["day"]
+        parcel["growth"]            = 0
+        parcel["weed_level"]        = 0
+        parcel["fertilizer_boost"]  = 0
+        parcel["soil_moisture"]     = max(parcel["soil_moisture"], 55)
+        parcel["expected_yield"]    = round(crop["yield_per_ha"] * parcel["size_ha"], 2)
+        _bump_stat(state, "plantings")
 
-    await _save_state(user_id, state)
-    await _save_parcels(user_id, [parcel])
-    await _log_activity(
-        user_id,
-        f"Semis {crop['name']} sur {parcel['name']} (−{cost:.0f}€)" + (" ⚠️ hors saison" if out_of_season else ""),
-        "field", state["day"]
-    )
-    return {
-        "ok": True, "parcel": parcel,
-        "out_of_season":  out_of_season,
-        "season_warning": f"⚠️ {crop['name']} hors saison — rendement -40%" if out_of_season else None
-    }
+        await _save_state(user_id, state)
+        await _save_parcels(user_id, [parcel])
+        await _log_activity(
+            user_id,
+            f"Semis {crop['name']} sur {parcel['name']} (−{cost:.0f}€)" + (" ⚠️ hors saison" if out_of_season else ""),
+            "field", state["day"]
+        )
+        return {
+            "ok": True, "parcel": parcel,
+            "out_of_season":  out_of_season,
+            "season_warning": f"⚠️ {crop['name']} hors saison — rendement -40%" if out_of_season else None
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Erreur non gérée pendant la plantation %s pour user=%s", parcel_id, user_id)
+        return JSONResponse(
+            status_code=503,
+            content={
+                "ok": False,
+                "fallback": True,
+                "error": "SERVER_RESTARTING",
+                "detail": "Serveur en cours de redémarrage. Réessayez dans quelques secondes.",
+            },
+        )
 
 @api_router.post("/parcels/{parcel_id}/harvest")
 async def harvest(parcel_id: str, user_id: str = Depends(require_company)):

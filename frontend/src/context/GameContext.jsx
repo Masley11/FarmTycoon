@@ -86,7 +86,11 @@ export function GameProvider({ children }) {
     }
     try {
       const res = await fetchGameState();
-      if (!res || typeof res !== "object") return;
+      if (!res || typeof res !== "object" || res?.fallback) {
+        const invalidResponse = new Error("Réponse serveur temporairement invalide");
+        invalidResponse.isServerRestarting = true;
+        throw invalidResponse;
+      }
 
       // Merge profond pour garantir que toutes les clés existent
       const merged = {
@@ -128,6 +132,11 @@ export function GameProvider({ children }) {
       if (status === 409) {
         setData(DEFAULT_DATA);
         navigate("/onboarding", { replace: true });
+        return;
+      }
+      if (e?.isServerRestarting || status >= 500) {
+        console.warn("Backend temporairement indisponible:", e);
+        setError("SERVER_RESTARTING");
         return;
       }
       console.error("GameContext refresh error:", e);

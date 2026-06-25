@@ -40,6 +40,18 @@ function GameLoadingScreen({ message = "Chargement de l'exploitation…" }) {
   );
 }
 
+function ServerRestartingScreen() {
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center px-6 text-center text-stone-500">
+      <Loader2 className="h-7 w-7 animate-spin text-emerald-800 mb-3" />
+      <h1 className="font-display text-xl font-semibold text-stone-900">Serveur en cours de redémarrage</h1>
+      <p className="mt-2 max-w-md text-sm leading-relaxed">
+        Reconnexion à l'exploitation en cours. Vos données sont conservées dans la base et la page se resynchronisera automatiquement.
+      </p>
+    </div>
+  );
+}
+
 class GameErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -106,13 +118,15 @@ function GameRoutes() {
 }
 
 function GameRouteContent({ resetKey }) {
-  const { data, loading } = useGame();
+  const { data, loading, error } = useGame();
   const hasEssentialData = !!data?.state && !!data?.catalog;
 
   return (
     <AppShell>
       <GameErrorBoundary resetKey={resetKey}>
-        {loading || !hasEssentialData ? (
+        {error === "SERVER_RESTARTING" ? (
+          <ServerRestartingScreen />
+        ) : loading || !hasEssentialData ? (
           <GameLoadingScreen />
         ) : (
           <Routes>
