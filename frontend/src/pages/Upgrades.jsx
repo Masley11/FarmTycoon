@@ -18,14 +18,14 @@ export default function Upgrades() {
   const { data, refresh, loading } = useGame();
   const [busy, setBusy] = useState(null);
 
-  if (loading && !data) return <div className="text-stone-500"><Loader2 className="h-5 w-5 animate-spin inline mr-2" />Chargement…</div>;
+  if (loading && !data?.state) return <div className="text-stone-500"><Loader2 className="h-5 w-5 animate-spin inline mr-2" />Chargement…</div>;
 
-  const catalog = data.catalog.upgrades;
-  const owned = new Set(data.state.upgrades || []);
+  const catalog = data?.catalog?.upgrades || {};
+  const owned = new Set(data?.state?.upgrades || []);
 
   const handleBuy = async (key) => {
     setBusy(key);
-    try { await buyUpgrade(key); toast.success(`Amélioration installée: ${catalog[key].name}`); await refresh(); }
+    try { await buyUpgrade(key); toast.success(`Amélioration installée: ${catalog?.[key]?.name || key}`); await refresh(); }
     catch (e) { toast.error(e.response?.data?.detail || "Achat impossible"); }
     finally { setBusy(null); }
   };
@@ -47,7 +47,7 @@ export default function Upgrades() {
       </header>
 
       {Object.entries(byCat).map(([cat, items]) => {
-        const vis = CAT_VIS[cat];
+        const vis = CAT_VIS[cat] || CAT_VIS.field;
         const Icon = vis.icon;
         return (
           <section key={cat}>
