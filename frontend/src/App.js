@@ -1,9 +1,10 @@
 import "@/App.css";
+import { Component } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Loader2 } from "lucide-react";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { GameProvider } from "@/context/GameContext";
+import { GameProvider, useGame } from "@/context/GameContext";
 import { AppShell } from "@/components/layout/AppShell";
 import Dashboard from "@/pages/Dashboard";
 import Lands from "@/pages/Lands";
@@ -28,6 +29,45 @@ function FullScreenLoader() {
       <Loader2 className="h-6 w-6 animate-spin text-emerald-800" />
     </div>
   );
+}
+
+function GameLoadingScreen({ message = "Chargement de l'exploitation…" }) {
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center text-stone-500">
+      <Loader2 className="h-7 w-7 animate-spin text-emerald-800 mb-3" />
+      <span className="text-sm font-medium">{message}</span>
+    </div>
+  );
+}
+
+class GameErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    console.error("Erreur de rendu du jeu:", error);
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <GameLoadingScreen message="Synchronisation des données de l'exploitation…" />
+      );
+    }
+    return this.props.children;
+  }
 }
 
 // Garde : doit être connecté
@@ -56,27 +96,44 @@ function PublicOnly({ children }) {
 }
 
 function GameRoutes() {
+  const location = useLocation();
+
   return (
     <GameProvider>
-      <AppShell>
-        <Routes>
-          <Route path="/"           element={<Dashboard />} />
-          <Route path="/lands"      element={<Lands />} />
-          <Route path="/crops"      element={<Crops />} />
-          <Route path="/market"     element={<Market />} />
-          <Route path="/resources"  element={<Resources />} />
-          <Route path="/livestock"  element={<Livestock />} />
-          <Route path="/warehouse"  element={<Warehouse />} />
-          <Route path="/vehicles"   element={<Vehicles />} />
-          <Route path="/employees"  element={<Employees />} />
-          <Route path="/upgrades"   element={<Upgrades />} />
-          <Route path="/missions"   element={<Missions />} />
-          <Route path="/premium"    element={<Premium />} />
-          <Route path="/profile"    element={<Profile />} />
-          <Route path="*"           element={<Navigate to="/" replace />} />
-        </Routes>
-      </AppShell>
+      <GameRouteContent resetKey={location.pathname} />
     </GameProvider>
+  );
+}
+
+function GameRouteContent({ resetKey }) {
+  const { data, loading } = useGame();
+  const hasEssentialData = !!data?.state && !!data?.catalog;
+
+  return (
+    <AppShell>
+      <GameErrorBoundary resetKey={resetKey}>
+        {loading || !hasEssentialData ? (
+          <GameLoadingScreen />
+        ) : (
+          <Routes>
+            <Route path="/"           element={<Dashboard />} />
+            <Route path="/lands"      element={<Lands />} />
+            <Route path="/crops"      element={<Crops />} />
+            <Route path="/market"     element={<Market />} />
+            <Route path="/resources"  element={<Resources />} />
+            <Route path="/livestock"  element={<Livestock />} />
+            <Route path="/warehouse"  element={<Warehouse />} />
+            <Route path="/vehicles"   element={<Vehicles />} />
+            <Route path="/employees"  element={<Employees />} />
+            <Route path="/upgrades"   element={<Upgrades />} />
+            <Route path="/missions"   element={<Missions />} />
+            <Route path="/premium"    element={<Premium />} />
+            <Route path="/profile"    element={<Profile />} />
+            <Route path="*"           element={<Navigate to="/" replace />} />
+          </Routes>
+        )}
+      </GameErrorBoundary>
+    </AppShell>
   );
 }
 

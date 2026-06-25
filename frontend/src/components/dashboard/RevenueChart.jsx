@@ -1,11 +1,11 @@
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 
 export function RevenueChart({ history }) {
-  const data = (history || []).map((h) => ({
-    day: `J${h.day}`,
-    revenu: h.revenue,
-    dépenses: h.expenses,
-    trésorerie: h.cash,
+  const data = (history || []).filter(Boolean).map((h) => ({
+    day: `J${h?.day ?? "—"}`,
+    revenu: h?.revenue ?? 0,
+    dépenses: h?.expenses ?? 0,
+    trésorerie: h?.cash ?? 0,
   }));
 
   if (data.length === 0) {

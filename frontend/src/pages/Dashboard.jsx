@@ -34,16 +34,18 @@ function LevelBadge({ level }) {
 
 // Barre XP
 function XpBar({ level, progress_pct, xp_to_next }) {
+  const safeLevel = level ?? 1;
+  const safeProgress = progress_pct ?? 0;
   return (
     <div className="flex items-center gap-3 mt-3">
       <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
         <div
           className="h-full bg-amber-400 rounded-full transition-all duration-700"
-          style={{ width: `${progress_pct}%` }}
+          style={{ width: `${safeProgress}%` }}
         />
       </div>
       <span className="text-[10px] text-stone-400 whitespace-nowrap">
-        {xp_to_next} XP → Niv. {level + 1}
+        {xp_to_next ?? 0} XP → Niv. {safeLevel + 1}
       </span>
     </div>
   );
@@ -52,11 +54,11 @@ function XpBar({ level, progress_pct, xp_to_next }) {
 // Badge saison
 function SeasonBadge({ season }) {
   if (!season) return null;
-  const style = SEASON_STYLES[season.season_key] || SEASON_STYLES.spring;
+  const style = SEASON_STYLES[season?.season_key] || SEASON_STYLES.spring;
   return (
     <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border ${style.bg} ${style.border}`}>
-      <span className="text-sm">{season.season_icon}</span>
-      <span className={`text-xs font-semibold ${style.text}`}>{season.display}</span>
+      <span className="text-sm">{season?.season_icon || "🌱"}</span>
+      <span className={`text-xs font-semibold ${style.text}`}>{season?.display || "Saison en cours"}</span>
     </div>
   );
 }
@@ -68,7 +70,7 @@ function NextUnlockBanner({ nextUnlock }) {
     <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
       <Lock className="h-3.5 w-3.5 text-stone-400 flex-shrink-0" strokeWidth={1.8} />
       <span className="text-xs text-stone-300">
-        Prochain déverrouillage — <strong className="text-white">Niv. {nextUnlock.level}</strong> : {nextUnlock.desc}
+        Prochain déverrouillage — <strong className="text-white">Niv. {nextUnlock?.level ?? "—"}</strong> : {nextUnlock?.desc || "À venir"}
       </span>
       <ChevronRight className="h-3.5 w-3.5 text-stone-500 ml-auto flex-shrink-0" strokeWidth={1.8} />
     </div>
@@ -78,7 +80,7 @@ function NextUnlockBanner({ nextUnlock }) {
 export default function Dashboard() {
   const { data, loading } = useGame();
 
-  if (loading && !data) {
+  if (loading && !data?.state) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-stone-500">
         <Loader2 className="h-6 w-6 animate-spin mr-2" />
@@ -92,15 +94,15 @@ export default function Dashboard() {
   const level   = data?.level   || {};
   const season  = data?.season  || null;
 
-  const owned      = parcels.filter((p) => p.owned);
-  const ownedHa    = owned.reduce((s, p) => s + (p.size_ha || 0), 0);
-  const activeCrops = owned.filter((p) => p.crop_type).length;
+  const owned      = parcels.filter((p) => p?.owned);
+  const ownedHa    = owned.reduce((s, p) => s + (p?.size_ha || 0), 0);
+  const activeCrops = owned.filter((p) => p?.crop_type).length;
 
-  const inventoryTotal = Object.values(state.inventory || {}).reduce(
+  const inventoryTotal = Object.values(state?.inventory || {}).reduce(
     (s, v) => s + (typeof v === "number" ? v : 0), 0
   );
 
-  const lastDay  = (state.history || []).slice(-1)[0];
+  const lastDay  = (state?.history || []).slice(-1)[0];
   const revToday = lastDay?.revenue  || 0;
   const expToday = lastDay?.expenses || 0;
   const net      = revToday - expToday;
@@ -136,15 +138,15 @@ export default function Dashboard() {
           {/* Saison + niveau */}
           <div className="flex flex-wrap items-center gap-3 mt-4">
             {season && <SeasonBadge season={season} />}
-            <LevelBadge level={level.level || 1} />
+            <LevelBadge level={level?.level || 1} />
           </div>
 
           {/* Barre XP */}
-          {level.level > 0 && (
+          {(level?.level ?? 1) > 0 && (
             <XpBar
-              level={level.level}
-              progress_pct={level.progress_pct || 0}
-              xp_to_next={level.xp_to_next || 0}
+              level={level?.level ?? 1}
+              progress_pct={level?.progress_pct || 0}
+              xp_to_next={level?.xp_to_next || 0}
             />
           )}
 
@@ -163,15 +165,15 @@ export default function Dashboard() {
           <div className="mt-4 flex flex-wrap gap-3">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 border border-white/20 backdrop-blur-md">
               <Wallet className="h-4 w-4 text-emerald-300" strokeWidth={1.7} />
-              <span className="text-sm font-semibold">{fmtCurrency(state.cash)}</span>
+              <span className="text-sm font-semibold">{fmtCurrency(state?.cash)}</span>
               <span className="text-xs text-stone-300 ml-1">trésorerie</span>
             </div>
           </div>
 
           {/* Prochain déverrouillage */}
-          {level.next_unlock && (
+          {level?.next_unlock && (
             <div className="mt-4 max-w-md">
-              <NextUnlockBanner nextUnlock={level.next_unlock} />
+              <NextUnlockBanner nextUnlock={level?.next_unlock} />
             </div>
           )}
         </div>
@@ -181,7 +183,7 @@ export default function Dashboard() {
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <KpiCard
           label="Trésorerie"
-          value={fmtCurrency(state.cash)}
+          value={fmtCurrency(state?.cash)}
           sublabel={`Net ${net >= 0 ? "+" : ""}${fmtCurrency(net)} aujourd'hui`}
           trend={net >= 0 ? "up" : "down"}
           icon={Wallet}
@@ -216,16 +218,16 @@ export default function Dashboard() {
 
       {/* ── CHARTS & WEATHER ── */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        <div className="lg:col-span-2"><RevenueChart history={state.history} /></div>
-        <WeatherWidget weather={state.weather} />
+        <div className="lg:col-span-2"><RevenueChart history={state?.history} /></div>
+        <WeatherWidget weather={state?.weather} />
       </section>
 
       {/* ── RESSOURCES ── */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard label="Eau"         value={`${Math.round(state.water       ?? 0)} m³`}  icon={Droplets}    accent="blue"       testId="kpi-water" />
-        <KpiCard label="Carburant"   value={`${Math.round(state.fuel        ?? 0)} L`}   icon={Fuel}        accent="terracotta" testId="kpi-fuel" />
-        <KpiCard label="Électricité" value={`${Math.round(state.electricity ?? 0)} kWh`} icon={TrendingUp}  accent="amber"      testId="kpi-electricity" />
-        <KpiCard label="Herbicide"   value={`${Math.round(state.herbicide   ?? 0)} L`}   icon={Sprout}      accent="stone"      testId="kpi-herbicide" />
+        <KpiCard label="Eau"         value={`${Math.round(state?.water       ?? 0)} m³`}  icon={Droplets}    accent="blue"       testId="kpi-water" />
+        <KpiCard label="Carburant"   value={`${Math.round(state?.fuel        ?? 0)} L`}   icon={Fuel}        accent="terracotta" testId="kpi-fuel" />
+        <KpiCard label="Électricité" value={`${Math.round(state?.electricity ?? 0)} kWh`} icon={TrendingUp}  accent="amber"      testId="kpi-electricity" />
+        <KpiCard label="Herbicide"   value={`${Math.round(state?.herbicide   ?? 0)} L`}   icon={Sprout}      accent="stone"      testId="kpi-herbicide" />
       </section>
 
       {/* ── CARTE + ALERTES ── */}

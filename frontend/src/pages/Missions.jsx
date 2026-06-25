@@ -13,13 +13,13 @@ const COSMETIC_TIERS = [
 
 export default function Missions() {
   const { data, loading } = useGame();
-  if (loading && !data) {
+  if (loading && !data?.state) {
     return <div className="text-stone-500"><Loader2 className="h-5 w-5 animate-spin inline mr-2" />Chargement…</div>;
   }
 
-  const level = data.level;
-  const credits = data.state.premium_credits || 0;
-  const owned = new Set((data.state.cosmetics || []).map((c) => c.id));
+  const level = data?.level || { level: 1, xp: 0, xp_to_next: 100, progress_pct: 0 };
+  const credits = data?.state?.premium_credits || 0;
+  const owned = new Set((data?.state?.cosmetics || []).map((c) => c?.id));
 
   return (
     <div className="space-y-8">
@@ -43,10 +43,10 @@ export default function Missions() {
             <div>
               <div className="ft-label">Votre niveau</div>
               <div className="font-display text-3xl font-semibold text-stone-900 leading-none mt-1">
-                Niveau {level.level}
+                Niveau {level?.level ?? 1}
               </div>
               <div className="text-xs text-stone-500 mt-1">
-                {level.xp} XP total · {level.xp_to_next} XP avant le niveau {level.level + 1}
+                {level?.xp ?? 0} XP total · {level?.xp_to_next ?? 0} XP avant le niveau {(level?.level ?? 1) + 1}
               </div>
             </div>
           </div>
@@ -59,11 +59,11 @@ export default function Missions() {
           </div>
         </div>
         <div className="mt-5">
-          <Progress value={level.progress_pct} className="h-2" />
+          <Progress value={level?.progress_pct ?? 0} className="h-2" />
           <div className="flex justify-between mt-1.5 text-[10px] text-stone-500 uppercase tracking-wider">
-            <span>Niveau {level.level}</span>
-            <span>{level.progress_pct}%</span>
-            <span>Niveau {level.level + 1}</span>
+            <span>Niveau {level?.level ?? 1}</span>
+            <span>{level?.progress_pct ?? 0}%</span>
+            <span>Niveau {(level?.level ?? 1) + 1}</span>
           </div>
         </div>
       </section>

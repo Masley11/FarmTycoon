@@ -15,10 +15,13 @@ function formatProgress(p) {
 }
 
 function MissionCard({ m, compact }) {
-  const reverse = !!m.reverse;
+  if (!m) return null;
+  const target  = Number(m?.target) || 1;
+  const progress = Number(m?.progress) || 0;
+  const reverse = !!m?.reverse;
   const pct     = reverse
-    ? Math.max(0, 100 - (Math.min(m.progress, m.target * 1.5) / m.target) * 100)
-    : Math.min(100, ((m.progress || 0) / m.target) * 100);
+    ? Math.max(0, 100 - (Math.min(progress, target * 1.5) / target) * 100)
+    : Math.min(100, (progress / target) * 100);
 
   const typeKey  = m.type || "daily";
   const typeStyle = MISSION_TYPE_STYLES[typeKey] || MISSION_TYPE_STYLES.daily;
@@ -92,8 +95,8 @@ function MissionCard({ m, compact }) {
               <div className="flex items-center justify-between mt-1">
                 <span className="text-[10px] text-stone-400">
                   {reverse
-                    ? `${formatProgress(m.progress)} / max ${m.target} ${m.unit}`
-                    : `${formatProgress(m.progress)} / ${m.target} ${m.unit}`
+                    ? `${formatProgress(m?.progress)} / max ${m?.target ?? 0} ${m?.unit || ""}`
+                    : `${formatProgress(m?.progress)} / ${m?.target ?? 0} ${m?.unit || ""}`
                   }
                 </span>
                 {isCompleted && (
@@ -148,7 +151,7 @@ export function MissionsPanel({ compact = false, max }) {
             <div className="text-right hidden sm:block">
               <div className="text-[10px] text-stone-500 uppercase tracking-wide">Niveau</div>
               <div className="font-display text-lg font-bold text-stone-900 leading-none">
-                {level.level}
+                {level?.level ?? 1}
               </div>
             </div>
             <div className="relative h-10 w-10 flex-shrink-0">
@@ -158,7 +161,7 @@ export function MissionsPanel({ compact = false, max }) {
                   cx="18" cy="18" r="15"
                   fill="none" stroke="hsl(160 84% 25%)"
                   strokeWidth="3"
-                  strokeDasharray={`${(level.progress_pct / 100) * 94.2} 94.2`}
+                  strokeDasharray={`${((level?.progress_pct ?? 0) / 100) * 94.2} 94.2`}
                   strokeLinecap="round"
                 />
               </svg>
@@ -209,14 +212,14 @@ export function MissionsPanel({ compact = false, max }) {
           <div className="flex items-center gap-2 text-xs text-stone-500">
             <Star className="h-3.5 w-3.5 text-amber-500" strokeWidth={2} />
             <span>
-              Niveau {level.next_unlock.level} — débloque:{" "}
-              <strong className="text-stone-700">{level.next_unlock.desc}</strong>
+              Niveau {level?.next_unlock?.level} — débloque:{" "}
+              <strong className="text-stone-700">{level?.next_unlock?.desc}</strong>
             </span>
           </div>
           <div className="mt-2">
-            <Progress value={level.progress_pct || 0} className="h-1.5" />
+            <Progress value={level?.progress_pct || 0} className="h-1.5" />
             <div className="text-[10px] text-stone-400 mt-1 text-right">
-              {level.xp_to_next} XP restants
+              {level?.xp_to_next ?? 0} XP restants
             </div>
           </div>
         </div>
@@ -258,4 +261,4 @@ export function LevelBadge({ level, credits }) {
       )}
     </div>
   );
-      }
+}

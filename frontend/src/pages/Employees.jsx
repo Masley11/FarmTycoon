@@ -18,14 +18,14 @@ export default function Employees() {
   const { data, refresh, loading } = useGame();
   const [busy, setBusy] = useState(null);
 
-  if (loading && !data) return <div className="text-stone-500"><Loader2 className="h-5 w-5 animate-spin inline mr-2" />Chargement…</div>;
+  if (loading && !data?.state) return <div className="text-stone-500"><Loader2 className="h-5 w-5 animate-spin inline mr-2" />Chargement…</div>;
 
-  const roles = data.catalog.employee_roles;
-  const employees = data.state.employees || [];
+  const roles = data?.catalog?.employee_roles || {};
+  const employees = data?.state?.employees || [];
 
   const handleHire = async (role) => {
     setBusy(`hire-${role}`);
-    try { await hireEmployee(role); toast.success(`Embauche: ${roles[role].name}`); await refresh(); }
+    try { await hireEmployee(role); toast.success(`Embauche: ${roles?.[role]?.name || role}`); await refresh(); }
     catch (e) { toast.error(e.response?.data?.detail || "Embauche impossible"); }
     finally { setBusy(null); }
   };
@@ -38,7 +38,7 @@ export default function Employees() {
     finally { setBusy(null); }
   };
 
-  const totalSalary = employees.reduce((s, e) => s + (roles[e.role]?.daily_salary || 0), 0);
+  const totalSalary = employees.reduce((s, e) => s + (roles?.[e?.role]?.daily_salary || 0), 0);
 
   return (
     <div className="space-y-8">
@@ -80,25 +80,25 @@ export default function Employees() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {employees.map((e) => {
-              const cat = roles[e.role];
-              const vis = ROLE_VIS[e.role];
+              const cat = roles?.[e?.role] || { name: e?.role || "Employé", daily_salary: 0, desc: "" };
+              const vis = ROLE_VIS[e?.role] || ROLE_VIS.field_hand;
               return (
                 <div key={e.id} data-testid={`employee-${e.id}`} className="solid-card p-5">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center border ${vis.accent}`}>
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center border ${vis?.accent}`}>
                         <Briefcase className="h-4 w-4" strokeWidth={1.8} />
                       </div>
                       <div>
-                        <div className="font-display text-base font-semibold text-stone-900">{cat.name}</div>
-                        <div className="text-xs text-stone-500">Embauché jour {e.hired_day}</div>
+                        <div className="font-display text-base font-semibold text-stone-900">{cat?.name || "Employé"}</div>
+                        <div className="text-xs text-stone-500">Embauché jour {e?.hired_day ?? "—"}</div>
                       </div>
                     </div>
-                    <span className="text-sm font-semibold text-stone-900">{fmtCur(cat.daily_salary)}/j</span>
+                    <span className="text-sm font-semibold text-stone-900">{fmtCur(cat?.daily_salary)}/j</span>
                   </div>
                   <div className="mt-3 text-xs text-stone-600 flex items-center gap-1.5">
                     <Sparkles className="h-3 w-3 text-emerald-700" strokeWidth={2} />
-                    {cat.desc}
+                    {cat?.desc || ""}
                   </div>
                   <Button size="sm" variant="outline" onClick={() => handleFire(e.id)} disabled={busy === `fire-${e.id}`} className="w-full mt-4" data-testid={`fire-${e.id}`}>
                     <UserMinus className="h-3.5 w-3.5 mr-1.5 text-red-700" strokeWidth={1.8} />
@@ -115,22 +115,22 @@ export default function Employees() {
         <h2 className="font-display text-lg font-semibold text-stone-900 mb-4">Profils disponibles</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.entries(roles).map(([key, cat]) => {
-            const vis = ROLE_VIS[key];
-            const signup = cat.daily_salary * 3;
+            const vis = ROLE_VIS[key] || ROLE_VIS.field_hand;
+            const signup = (cat?.daily_salary || 0) * 3;
             return (
               <div key={key} data-testid={`hire-card-${key}`} className="solid-card p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className={`h-11 w-11 rounded-xl flex items-center justify-center border ${vis.accent}`}>
+                    <div className={`h-11 w-11 rounded-xl flex items-center justify-center border ${vis?.accent}`}>
                       <Briefcase className="h-5 w-5" strokeWidth={1.7} />
                     </div>
                     <div>
-                      <div className="font-display text-lg font-semibold text-stone-900">{cat.name}</div>
-                      <div className="text-xs text-stone-500 mt-0.5">{cat.desc}</div>
+                      <div className="font-display text-lg font-semibold text-stone-900">{cat?.name || key}</div>
+                      <div className="text-xs text-stone-500 mt-0.5">{cat?.desc || ""}</div>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="font-display text-xl font-semibold text-stone-900">{fmtCur(cat.daily_salary)}</div>
+                    <div className="font-display text-xl font-semibold text-stone-900">{fmtCur(cat?.daily_salary)}</div>
                     <div className="text-[10px] text-stone-500 uppercase tracking-wide">/ jour</div>
                   </div>
                 </div>

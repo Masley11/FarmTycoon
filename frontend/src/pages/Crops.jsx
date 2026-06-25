@@ -85,7 +85,7 @@ export default function Crops() {
           Plantez, irriguez, fertilisez et récoltez vos parcelles.
           {season && (
             <span className="ml-2 font-medium text-stone-800">
-              {season.season_icon} {season.display}
+              {season?.season_icon || "🌱"} {season?.display || "Saison en cours"}
             </span>
           )}
         </p>
@@ -98,7 +98,7 @@ export default function Crops() {
           {Object.entries(catalog).map(([key, c]) => {
             const vis       = CROP_VIS[key];
             const locked    = (c.min_level || 1) > level;
-            const offSeason = season && !isCropInSeason(key, season.season_key);
+            const offSeason = season && !isCropInSeason(key, season?.season_key);
             return (
               <div
                 key={key}
@@ -300,7 +300,7 @@ function CropCard({ parcel, catalog, level, season, busy, onPlant, onIrrigate, o
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {Object.entries(catalog).map(([key, c]) => {
                 const locked    = (c.min_level || 1) > level;
-                const offSeason = season && !isCropInSeason(key, season.season_key);
+                const offSeason = season && !isCropInSeason(key, season?.season_key);
                 const vis       = CROP_VIS[key];
                 return (
                   <button
