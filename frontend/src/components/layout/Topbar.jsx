@@ -25,10 +25,25 @@ const fmtCurrency = (v) =>
   new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v ?? 0);
 
 export function Topbar() {
-  const { data, loading } = useGame();
+  const { data, loading, refresh } = useGame();
   const state = data?.state;
   const cond = state?.weather?.condition || "sunny";
   const WIcon = WEATHER_ICONS[cond] || Sun;
+  const [ticking, setTicking] = useState(false);
+
+  const handleNextDay = async () => {
+    if (ticking) return;
+    setTicking(true);
+    try {
+      const res = await forceTick();
+      toast.success(`⏭️ Jour ${res?.day ?? ""} — ${res?.season?.display ?? ""}`);
+      await refresh();
+    } catch {
+      // toast déjà géré par l'intercepteur api
+    } finally {
+      setTicking(false);
+    }
+  };
 
   return (
     <header
