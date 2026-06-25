@@ -55,7 +55,7 @@ export function Topbar() {
               >
                 <WIcon className="h-4 w-4 text-amber-700" strokeWidth={1.7} />
                 <span className="text-xs font-medium text-stone-700">
-                  {WEATHER_LABELS[cond]} · {state?.weather?.temperature_c}°C
+                  {WEATHER_LABELS[cond]} · {state?.weather?.temperature_c ?? "—"}°C
                 </span>
               </div>
               <div
