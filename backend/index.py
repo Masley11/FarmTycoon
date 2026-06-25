@@ -107,24 +107,44 @@ async def _log_activity(user_id: str, message: str, type_: str = "info", day: in
 
 async def _auto_tick(user_id: str, state, parcels):
     _ensure_missions(state)
+
+    # Filet de sécurité : si last_tick_at est absent/corrompu, on l'initialise
+    # à maintenant et on persiste tout de suite — sinon compute_pending_days
+    # retournerait 0 en boucle et le temps ne s'écoulerait jamais.
+    last_iso = state.get("last_tick_at")
+    valid = False
+    if isinstance(last_iso, str) and last_iso:
+        try:
+            datetime.fromisoformat(last_iso)
+            valid = True
+        except Exception:
+            valid = False
+    if not valid:
+        state["last_tick_at"] = gl.now_utc().isoformat()
+        await _save_state(user_id, state)
+        return state, parcels, 0
+
     pending = gl.compute_pending_days(state)
     days    = min(pending, 30)
     if days > 0:
-        # Bonus croissance céréalier appliqué via state si game_logic le supporte ;
-        # sinon on multiplie growth après tick.
         growth_mult = _spec_mult(state, "growth_mult")
         summary = gl.process_ticks(state, parcels, days)
         if growth_mult != 1.0:
             for p in parcels:
                 if p.get("crop_type") and p.get("growth", 0) < 100:
                     p["growth"] = min(100, round(p["growth"] * growth_mult, 2))
-        state["last_tick_at"] = gl.now_utc().isoformat()
+        # Avance last_tick_at de N * SECONDS_PER_GAME_DAY (au lieu de "now")
+        # pour ne pas perdre les fractions de seconde accumulées.
+        from datetime import timedelta
+        prev = datetime.fromisoformat(state["last_tick_at"])
+        state["last_tick_at"] = (prev + timedelta(seconds=days * gl.SECONDS_PER_GAME_DAY)).isoformat()
         for act in summary["activities"]:
             await _log_activity(user_id, act["message"], act["type"], act["day"])
         await _save_state(user_id, state)
         await _save_parcels(user_id, parcels)
     gl.update_mission_progress(state)
     return state, parcels, days
+
 
 
 # ── Dépendance: charge l'état OU exige une entreprise ─────────────────────────
