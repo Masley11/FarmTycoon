@@ -47,6 +47,8 @@ export function BottomNav() {
               Toutes les sections
             </span>
             <button
+              type="button"
+              aria-label="Fermer le menu"
               onClick={() => setShowMore(false)}
               className="text-stone-400 hover:text-stone-600 transition-colors"
             >
@@ -116,6 +118,9 @@ export function BottomNav() {
 
           {/* Bouton Plus */}
           <button
+            type="button"
+            aria-label={showMore ? "Fermer le menu Plus" : "Ouvrir le menu Plus"}
+            aria-expanded={showMore}
             onClick={() => setShowMore((v) => !v)}
             className={[
               "flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] tracking-wide transition-colors",
