@@ -1,9 +1,10 @@
-import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Map, Sprout, TrendingUp, Droplets, Crown, RotateCcw, Target, Beef, Truck, Users, Settings } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { LayoutDashboard, Map, Sprout, TrendingUp, Droplets, Crown, RotateCcw, Target, Beef, Truck, Users, Settings, User, LogOut } from "lucide-react";
 import { Brand } from "./Brand";
 import { Button } from "@/components/ui/button";
 import { resetGame } from "@/lib/api";
 import { useGame } from "@/context/GameContext";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 const NAV = [
@@ -18,10 +19,14 @@ const NAV = [
   { to: "/upgrades", label: "Améliorations", icon: Settings, testId: "nav-upgrades" },
   { to: "/missions", label: "Missions", icon: Target, testId: "nav-missions" },
   { to: "/premium", label: "FarmTycoon+", icon: Crown, testId: "nav-premium" },
+  { to: "/profile", label: "Profil", icon: User, testId: "nav-profile" },
 ];
 
 export function Sidebar() {
   const { refresh } = useGame();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const handleLogout = () => { logout(); navigate("/login", { replace: true }); };
 
   const handleReset = async () => {
     if (!window.confirm("Réinitialiser toute l'exploitation ? Cette action est irréversible.")) return;
@@ -76,6 +81,16 @@ export function Sidebar() {
         >
           <RotateCcw className="h-3.5 w-3.5 mr-2" strokeWidth={1.7} />
           Réinitialiser
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLogout}
+          className="w-full justify-start text-stone-500 hover:text-stone-900"
+          data-testid="logout-btn"
+        >
+          <LogOut className="h-3.5 w-3.5 mr-2" strokeWidth={1.7} />
+          Se déconnecter
         </Button>
         <p className="px-3 text-[10px] text-stone-400 leading-relaxed">
           MVP v1.0 — Mode démo single-save.<br />

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard, Map, Sprout, TrendingUp, Droplets,
-  Grid2X2, Beef, Truck, Users, Wrench, Star, Trophy, X
+  Grid2X2, Beef, Truck, Users, Wrench, Star, Trophy, X, User
 } from "lucide-react";
 
 // 5 onglets principaux visibles en bas
@@ -22,6 +22,7 @@ const MORE_NAV = [
   { to: "/upgrades",      icon: Wrench,  label: "Améliorations" },
   { to: "/missions",      icon: Trophy,  label: "Missions"      },
   { to: "/premium",       icon: Star,    label: "Premium"       },
+  { to: "/profile",       icon: User,    label: "Profil"        },
 ];
 
 export function BottomNav() {
