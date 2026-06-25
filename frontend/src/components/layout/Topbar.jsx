@@ -1,6 +1,9 @@
 import { Brand } from "./Brand";
-import { Wallet, Calendar, Cloud, Sun, CloudRain, Zap, ThermometerSun, Loader2, Trophy, Sparkles } from "lucide-react";
+import { Wallet, Calendar, Cloud, Sun, CloudRain, Zap, ThermometerSun, Loader2, Trophy, Sparkles, FastForward } from "lucide-react";
 import { useGame } from "@/context/GameContext";
+import { useState } from "react";
+import { forceTick } from "@/lib/api";
+import { toast } from "sonner";
 
 const WEATHER_ICONS = {
   sunny: Sun,
