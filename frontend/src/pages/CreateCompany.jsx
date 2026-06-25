@@ -29,6 +29,9 @@ export default function CreateCompany() {
     try {
       await createCompany(name.trim(), spec);
       markHasCompany(true);
+      // Resynchronise /auth/me pour garantir has_company=true côté serveur
+      // avant que les guards et le GameProvider ne montent.
+      try { await refreshMe(); } catch {}
       toast.success("Bienvenue à la ferme !");
       navigate("/", { replace: true });
     } catch (err) {
