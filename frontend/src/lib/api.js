@@ -10,14 +10,47 @@ export const api = axios.create({
   timeout: 15000,
 });
 
+// ── Token JWT (localStorage) ─────────────────────────────────────────────────
+const TOKEN_KEY = "ft_token";
+export const getToken = () => {
+  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+};
+export const setToken = (t) => {
+  try {
+    if (t) localStorage.setItem(TOKEN_KEY, t);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {}
+};
+
+// Injecte le token Bearer sur chaque requête
+api.interceptors.request.use((config) => {
+  const t = getToken();
+  if (t) config.headers.Authorization = `Bearer ${t}`;
+  return config;
+});
+
 // Intercepteur global d'erreurs — silencieux pour les GET de polling,
 // toast pour les actions utilisateur (POST/PUT/DELETE).
 let lastErrorAt = 0;
 api.interceptors.response.use(
   (res) => res,
   (error) => {
+    const status = error.response?.status;
     const method = (error.config?.method || "get").toLowerCase();
     const isMutation = method !== "get";
+
+    // 401 → token invalide/expiré : on déconnecte et on renvoie au login
+    if (status === 401) {
+      setToken(null);
+      if (typeof window !== "undefined" && !/\/(login|signup)$/.test(window.location.pathname)) {
+        window.location.assign("/login");
+      }
+      return Promise.reject(error);
+    }
+
+    // 409 = "pas d'entreprise" → géré par AuthContext (redirection onboarding)
+    if (status === 409) return Promise.reject(error);
+
     const now = Date.now();
     if (isMutation && now - lastErrorAt > 1500) {
       lastErrorAt = now;
@@ -30,6 +63,19 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Auth ----------------------------------------------------------------
+export const authSignup = (email, password) =>
+  api.post("/auth/signup", { email, password }).then((r) => r.data);
+export const authLogin = (email, password) =>
+  api.post("/auth/login", { email, password }).then((r) => r.data);
+export const authMe = () => api.get("/auth/me").then((r) => r.data);
+
+// Company -------------------------------------------------------------
+export const createCompany = (name, specialization) =>
+  api.post("/company", { name, specialization }).then((r) => r.data);
+export const deleteCompany = (confirm) =>
+  api.delete("/company", { data: { confirm } }).then((r) => r.data);
 
 // Game ----------------------------------------------------------------
 export const fetchGameState = () => api.get("/game/state").then((r) => r.data);
