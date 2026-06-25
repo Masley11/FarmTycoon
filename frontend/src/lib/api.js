@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "sonner";
 
 // ✅ Utilise une URL relative — fonctionne sur Vercel et en local
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
@@ -6,7 +7,29 @@ export const API = `${BACKEND_URL}/api`;
 export const api = axios.create({
   baseURL: API,
   headers: { "Content-Type": "application/json" },
+  timeout: 15000,
 });
+
+// Intercepteur global d'erreurs — silencieux pour les GET de polling,
+// toast pour les actions utilisateur (POST/PUT/DELETE).
+let lastErrorAt = 0;
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    const method = (error.config?.method || "get").toLowerCase();
+    const isMutation = method !== "get";
+    const now = Date.now();
+    if (isMutation && now - lastErrorAt > 1500) {
+      lastErrorAt = now;
+      const msg =
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        (error.code === "ECONNABORTED" ? "Délai dépassé — réessayez." : "Erreur réseau");
+      toast.error(msg);
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Game ----------------------------------------------------------------
 export const fetchGameState = () => api.get("/game/state").then((r) => r.data);

@@ -140,7 +140,7 @@ export default function Dashboard() {
           </div>
 
           {/* Barre XP */}
-          {level.level && (
+          {level.level > 0 && (
             <XpBar
               level={level.level}
               progress_pct={level.progress_pct || 0}
