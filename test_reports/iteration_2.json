@@ -1,0 +1,34 @@
+{
+  "summary": "Iteration 2: Tested the brand-new daily missions + XP/level system end-to-end. Wrote 11 pytest cases in /app/backend/tests/test_missions.py — all 11 PASS against the live backend. Verified determinism for day=1 (fert_2, irrigate_3, contract_1 with correct instance_ids), GET /api/missions and /api/game/state shape, progression bumps via irrigate/fertilize/buy water, claim flow with exact reward shape & level math (xp=40, xp_for_next=100, xp_to_next=60, progress_pct=40.0), and the three error cases (already claimed → 400, not completed → 400, unknown id → 404). Frontend tested via Playwright: sidebar 'Missions' link present (data-testid='nav-missions'), Topbar 'Niv. 1 · 0 XP' badge present (data-testid='topbar-level'), Dashboard renders missions-panel with 3 mission cards, /missions page renders the title 'Missions quotidiennes', progression card, mission panel, and 5 cosmetic tiers. Triggered 3 irrigations via API, clicked 'Réclamer' on the irrigate_3 mission, toast appeared with '+40 XP · +80 €', the mission card switched to 'Récompense obtenue' and the topbar badge updated to 'Niv. 1 · 40 XP'.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_missions.py",
+    "/app/test_reports/pytest/test_missions_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "game_logic.update_mission_progress overrides m['completed']=False for reverse missions on every bump, which is the correct behaviour because passive missions are only resolved at end-of-day via _finalize_passive_missions. Confirmed by tests.",
+    "server.buy_resource only bumps water_purchased for water; non-water resources just call update_mission_progress. OK but `_bump_stat` would be cleaner if it always refreshed via single path. Minor.",
+    "server.claim_mission re-derives level_info AFTER awarding xp and adds any cosmetic for level >= threshold. Good. However the response 'level' is computed BEFORE the cosmetic is appended, which is fine (cosmetic is in rewards.cosmetic). No bug.",
+    "Mongo _id is correctly excluded everywhere ({'_id': 0} projection in find_one/find).",
+    "Auto-tick is still hot (10 s = 1 game day). Long-running test sessions or slow browsers may roll the day mid-test, which invalidates the day-1 deterministic missions. Backend tests sidestep this by calling /api/game/reset just before each scenario. Worth keeping in mind for future testers."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_missions.py (new — 11 pytest cases for missions/level/claim)"
+  ],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100%"},
+  "test_credentials": "n/a — demo mode, no auth",
+  "seed_data_creation": "Each backend test calls POST /api/game/reset to land on day=1 with deterministic missions (fert_2, irrigate_3, contract_1). Frontend test does the same via page.request before exercising the UI.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend uses single global save (GAME_ID='global'). Auto-tick = 1 in-game day per 10 real seconds, so always POST /api/game/reset right before mission-dependent assertions. Day-1 missions are guaranteed to be {fert_2, irrigate_3, contract_1}. Instance ids follow 'mission-{day}-{mission_id}'. The frontend's Toast lives outside the main viewport so screenshot-asserts on the toast may miss it; instead assert on the mission card text 'Récompense obtenue' and topbar-level XP value (both update synchronously after refresh()). Previous backend_test.py (16 cases) is still relevant and orthogonal to test_missions.py — run both together: pytest /app/backend/tests/ -v.",
+  "rca of the issue": "No bugs found. Mission seeding, progression bumps, claim flow, level math, and cosmetic-unlock skeleton all behave per spec."
+}

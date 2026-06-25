@@ -1,0 +1,6 @@
+/* FarmTycoon — base app overrides intentionally minimal.
+   All styling lives in /src/index.css (tokens) and Tailwind utility classes. */
+
+.App {
+  min-height: 100vh;
+}

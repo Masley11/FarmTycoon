@@ -1,0 +1,124 @@
+{
+  "project_name": "FarmTycoon",
+  "subtitle": "Agricultural Management Platform",
+  "theme": "light",
+  "archetype": "Organic & Earthy / Swiss & High-Contrast Hybrid",
+  "typography": {
+    "headings": {
+      "font_family": "Outfit",
+      "weights": ["400", "500", "700"],
+      "tracking": "tracking-tight",
+      "banned_fonts": ["Inter", "Roboto", "Open Sans", "Syne"]
+    },
+    "body": {
+      "font_family": "IBM Plex Sans",
+      "weights": ["400", "500"],
+      "tracking": "tracking-normal"
+    },
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-none",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight",
+      "h3": "text-xl sm:text-2xl tracking-tight",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-base text-zinc-700",
+      "small_label": "text-xs tracking-[0.1em] uppercase text-zinc-500 font-medium"
+    }
+  },
+  "colors": {
+    "background": {
+      "page": "bg-stone-50",
+      "card_solid": "bg-white",
+      "card_glass": "bg-white/70 backdrop-blur-xl"
+    },
+    "primary": {
+      "DEFAULT": "bg-emerald-800",
+      "hover": "hover:bg-emerald-700",
+      "text": "text-emerald-800",
+      "ring": "focus:ring-emerald-800/30"
+    },
+    "secondary": {
+      "DEFAULT": "bg-stone-900",
+      "hover": "hover:bg-stone-800",
+      "text": "text-stone-900"
+    },
+    "accent_alerts": {
+      "warning": "text-orange-700 bg-orange-50 border-orange-200",
+      "danger": "text-red-700 bg-red-50 border-red-200",
+      "success": "text-emerald-700 bg-emerald-50 border-emerald-200",
+      "info": "text-blue-700 bg-blue-50 border-blue-200"
+    },
+    "borders": "border-stone-200",
+    "glass_borders": "border-white/40",
+    "text": {
+      "primary": "text-stone-900",
+      "secondary": "text-stone-500",
+      "disabled": "text-stone-300"
+    },
+    "forbidden_colors": ["#9D4CDD", "#1B93A4", "#7351B7"]
+  },
+  "surfaces_and_shadows": {
+    "glassmorphism": {
+      "usage": "Headers, Navbars, Modal Overlays, Premium Tier Cards",
+      "classes": "bg-white/70 backdrop-blur-xl backdrop-saturate-150 border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.04)]"
+    },
+    "solid_cards": {
+      "usage": "Dashboard Widgets, Data Tables, Standard KPI Cards",
+      "classes": "bg-white rounded-xl border border-stone-200 shadow-sm hover:shadow-md transition-shadow duration-200"
+    },
+    "radius": "rounded-xl for main cards, rounded-md for inputs/buttons"
+  },
+  "layout_and_spacing": {
+    "philosophy": "Control Room Grid. High data density but visually clean. Utilize full height, clear alignments.",
+    "grid": {
+      "base": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4",
+      "gap": "gap-4 md:gap-6",
+      "kpi_span": "col-span-1",
+      "chart_span": "col-span-2 row-span-2 md:col-span-3",
+      "list_span": "col-span-1 row-span-2"
+    },
+    "padding": {
+      "page": "p-4 md:p-8 lg:p-12",
+      "card": "p-5 md:p-6"
+    }
+  },
+  "components": {
+    "buttons": "Shadcn based. Square or slightly rounded (rounded-md). Strict hover states with lighter hue.",
+    "inputs": "Shadcn based. White bg, stone-200 border, focus ring with primary emerald.",
+    "charts": "Recharts. Use monochromatic or earthy palettes (emerald, sage, terracotta). No default bright colors.",
+    "icons": "lucide-react. Stroke width 1.5 for a premium, lightweight tech feel. NO EMOJIS.",
+    "navigation": "Top premium header with glassmorphism + Desktop Sidebar (flat, stone-900 or stone-50) / Mobile Bottom Nav."
+  },
+  "animation": {
+    "philosophy": "Fluid, snappy, functional. Not distracting.",
+    "classes": "transition-all duration-200 ease-out",
+    "hover_effects": "-translate-y-[2px] shadow-md"
+  },
+  "media": {
+    "image_urls": {
+      "tractor_field": {
+        "url": "https://images.unsplash.com/photo-1763416160482-c77fadd32d3f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1ODh8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBmYXJtJTIwdHJhY3RvcnxlbnwwfHx8fDE3Nzg2MzM1ODh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Green tractor with sprayer attachment in a field",
+        "usage": "Hero section background, Equipment inventory placeholder, or Land parcel image"
+      },
+      "wheat_field": {
+        "url": "https://images.unsplash.com/photo-1688278526565-5bb028024473?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHwzfHx3aGVhdCUyMGZpZWxkJTIwYWdyaWN1bHR1cmV8ZW58MHx8fHwxNzc4NjMzNTg4fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Ripe wheat field",
+        "usage": "Crop management module header, Farm overview card"
+      },
+      "silos": {
+        "url": "https://images.unsplash.com/photo-1776799214275-7e68c756c573?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwxfHxmYXJtJTIwc2lsbyUyMG1vZGVybnxlbnwwfHx8fDE3Nzg2MzM1ODh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Farm buildings and wind turbines at sunset",
+        "usage": "Inventory/Warehouse module, premium subscription banner background"
+      }
+    }
+  },
+  "strict_rules": [
+    "NO cartoon illustrations or childish UI patterns.",
+    "NO emojis anywhere in the app (use Lucide icons instead).",
+    "NO generic purple/violet/teal gradients.",
+    "MUST feel like a professional ERP or Bloomberg terminal for agriculture.",
+    "MUST use data-testid attributes on all interactive elements.",
+    "Ensure high contrast and readability on all cards and charts."
+  ],
+  "instructions_to_main_agent": "Use this JSON strictly. Setup Shadcn components with the provided radii and colors. Apply Outfit for headings and IBM Plex Sans for body. Build the dashboard using the 'Control Room Grid' logic for dense, organized data cards. Incorporate the provided Unsplash images in their respective modules to add realism. Integrate Recharts using the earthy green/terracotta palette."
+}
