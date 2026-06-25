@@ -98,11 +98,11 @@ export default function Dashboard() {
   const ownedHa    = owned.reduce((s, p) => s + (p?.size_ha || 0), 0);
   const activeCrops = owned.filter((p) => p?.crop_type).length;
 
-  const inventoryTotal = Object.values(state.inventory || {}).reduce(
+  const inventoryTotal = Object.values(state?.inventory || {}).reduce(
     (s, v) => s + (typeof v === "number" ? v : 0), 0
   );
 
-  const lastDay  = (state.history || []).slice(-1)[0];
+  const lastDay  = (state?.history || []).slice(-1)[0];
   const revToday = lastDay?.revenue  || 0;
   const expToday = lastDay?.expenses || 0;
   const net      = revToday - expToday;
@@ -165,7 +165,7 @@ export default function Dashboard() {
           <div className="mt-4 flex flex-wrap gap-3">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 border border-white/20 backdrop-blur-md">
               <Wallet className="h-4 w-4 text-emerald-300" strokeWidth={1.7} />
-              <span className="text-sm font-semibold">{fmtCurrency(state.cash)}</span>
+              <span className="text-sm font-semibold">{fmtCurrency(state?.cash)}</span>
               <span className="text-xs text-stone-300 ml-1">trésorerie</span>
             </div>
           </div>
@@ -183,7 +183,7 @@ export default function Dashboard() {
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <KpiCard
           label="Trésorerie"
-          value={fmtCurrency(state.cash)}
+          value={fmtCurrency(state?.cash)}
           sublabel={`Net ${net >= 0 ? "+" : ""}${fmtCurrency(net)} aujourd'hui`}
           trend={net >= 0 ? "up" : "down"}
           icon={Wallet}
@@ -224,10 +224,10 @@ export default function Dashboard() {
 
       {/* ── RESSOURCES ── */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard label="Eau"         value={`${Math.round(state.water       ?? 0)} m³`}  icon={Droplets}    accent="blue"       testId="kpi-water" />
-        <KpiCard label="Carburant"   value={`${Math.round(state.fuel        ?? 0)} L`}   icon={Fuel}        accent="terracotta" testId="kpi-fuel" />
-        <KpiCard label="Électricité" value={`${Math.round(state.electricity ?? 0)} kWh`} icon={TrendingUp}  accent="amber"      testId="kpi-electricity" />
-        <KpiCard label="Herbicide"   value={`${Math.round(state.herbicide   ?? 0)} L`}   icon={Sprout}      accent="stone"      testId="kpi-herbicide" />
+        <KpiCard label="Eau"         value={`${Math.round(state?.water       ?? 0)} m³`}  icon={Droplets}    accent="blue"       testId="kpi-water" />
+        <KpiCard label="Carburant"   value={`${Math.round(state?.fuel        ?? 0)} L`}   icon={Fuel}        accent="terracotta" testId="kpi-fuel" />
+        <KpiCard label="Électricité" value={`${Math.round(state?.electricity ?? 0)} kWh`} icon={TrendingUp}  accent="amber"      testId="kpi-electricity" />
+        <KpiCard label="Herbicide"   value={`${Math.round(state?.herbicide   ?? 0)} L`}   icon={Sprout}      accent="stone"      testId="kpi-herbicide" />
       </section>
 
       {/* ── CARTE + ALERTES ── */}
