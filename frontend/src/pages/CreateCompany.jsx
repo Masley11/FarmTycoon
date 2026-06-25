@@ -16,7 +16,7 @@ const SPECS = [
 ];
 
 export default function CreateCompany() {
-  const { markHasCompany, logout } = useAuth();
+  const { markHasCompany, refreshMe, logout } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [spec, setSpec] = useState("cerealier");
