@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
-import { fetchGameState } from "@/lib/api";
+import { useNavigate } from "react-router-dom";
+import { fetchGameState, getToken } from "@/lib/api";
 import { claimMission } from "@/lib/missions";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 const GameContext = createContext(null);
@@ -29,6 +31,8 @@ const DEFAULT_DATA = {
 };
 
 export function GameProvider({ children }) {
+  const { user, hasCompany, logout } = useAuth();
+  const navigate = useNavigate();
   const [data, setData]       = useState(DEFAULT_DATA);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -75,6 +79,11 @@ export function GameProvider({ children }) {
 
   // ── Refresh principal ─────────────────────────────────────────────────────
   const refresh = useCallback(async () => {
+    // Garde-fou : pas de requête sans token ni entreprise
+    if (!getToken() || !user || !hasCompany) {
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetchGameState();
       if (!res || typeof res !== "object") return;
@@ -98,25 +107,43 @@ export function GameProvider({ children }) {
       setData(merged);
       setError(null);
 
-      // Notification jours écoulés
       if (res.ticks_applied > 0 && lastTicksRef.current !== 0) {
         const si = merged.season;
         toast.info(`${si.season_icon} ${si.display}`, { duration: 3000 });
       }
       lastTicksRef.current = res.ticks_applied ?? 0;
 
-      // Auto-claim missions complétées
       await autoClaimMissions(merged.missions);
 
     } catch (e) {
+      const status = e?.response?.status;
+      // 401 : session perdue → reset propre + redirection
+      if (status === 401) {
+        setData(DEFAULT_DATA);
+        logout();
+        navigate("/login", { replace: true });
+        return;
+      }
+      // 409 : pas (plus) d'entreprise → onboarding
+      if (status === 409) {
+        setData(DEFAULT_DATA);
+        navigate("/onboarding", { replace: true });
+        return;
+      }
       console.error("GameContext refresh error:", e);
       setError(e.message || "Erreur de connexion");
     } finally {
       setLoading(false);
     }
-  }, [autoClaimMissions]);
+  }, [autoClaimMissions, user, hasCompany, logout, navigate]);
 
   useEffect(() => {
+    // Pas connecté ou sans entreprise → on n'arme pas le polling
+    if (!user || !hasCompany) {
+      setData(DEFAULT_DATA);
+      setLoading(false);
+      return;
+    }
     refresh();
     let id = setInterval(refresh, 8000);
     const onVisibility = () => {
@@ -132,7 +159,7 @@ export function GameProvider({ children }) {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [refresh]);
+  }, [refresh, user, hasCompany]);
 
   return (
     <GameContext.Provider value={{ data, loading, error, refresh }}>

@@ -42,8 +42,8 @@ api.interceptors.response.use(
     // 401 → token invalide/expiré : on déconnecte et on renvoie au login
     if (status === 401) {
       setToken(null);
-      if (typeof window !== "undefined" && !/\/(login|signup)$/.test(window.location.pathname)) {
-        window.location.assign("/login");
+      if (typeof window !== "undefined" && !/^\/(login|signup)/.test(window.location.pathname)) {
+        window.location.replace("/login");
       }
       return Promise.reject(error);
     }
