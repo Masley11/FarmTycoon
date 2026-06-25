@@ -37,8 +37,8 @@ export default function Warehouse() {
   const cropPrices   = data?.crop_prices      || {};
   const catalog      = data?.catalog          || {};
   const allProducts  = {
-    ...catalog.crops             || {},
-    ...catalog.livestock_products || {},
+    ...(catalog?.crops || {}),
+    ...(catalog?.livestock_products || {}),
   };
 
   // Ne montrer que les produits avec un stock > 0 ou > 0.01
@@ -111,7 +111,7 @@ export default function Warehouse() {
       ) : (
         <>
           {/* Cultures */}
-          {stockItems.some(([k]) => k in (catalog.crops || {})) && (
+          {stockItems.some(([k]) => k in (catalog?.crops || {})) && (
             <section>
               <h2 className="font-display text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
                 <Wheat className="h-5 w-5 text-amber-700" strokeWidth={1.7} />
@@ -119,7 +119,7 @@ export default function Warehouse() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {stockItems
-                  .filter(([k]) => k in (catalog.crops || {}))
+                  .filter(([k]) => k in (catalog?.crops || {}))
                   .map(([key, qty]) => (
                     <StockCard
                       key={key}
@@ -135,7 +135,7 @@ export default function Warehouse() {
           )}
 
           {/* Produits élevage */}
-          {stockItems.some(([k]) => k in (catalog.livestock_products || {})) && (
+          {stockItems.some(([k]) => k in (catalog?.livestock_products || {})) && (
             <section>
               <h2 className="font-display text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
                 <Beef className="h-5 w-5 text-red-700" strokeWidth={1.7} />
@@ -143,9 +143,9 @@ export default function Warehouse() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {stockItems
-                  .filter(([k]) => k in (catalog.livestock_products || {}))
+                  .filter(([k]) => k in (catalog?.livestock_products || {}))
                   .map(([key, qty]) => {
-                    const prod = catalog.livestock_products[key];
+                    const prod = catalog?.livestock_products?.[key];
                     return (
                       <StockCard
                         key={key}

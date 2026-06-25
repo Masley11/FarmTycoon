@@ -74,7 +74,7 @@ export function Topbar() {
                   className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200"
                 >
                   <Sparkles className="h-4 w-4 text-amber-700" strokeWidth={1.7} />
-                  <span className="text-xs font-semibold text-amber-900">{state.premium_credits}</span>
+                  <span className="text-xs font-semibold text-amber-900">{state?.premium_credits ?? 0}</span>
                 </div>
               )}
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-stone-50 border border-stone-200" data-testid="topbar-day">
