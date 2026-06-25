@@ -810,4 +810,26 @@ async def claim_mission(instance_id: str):
     return {"ok": True, "rewards": {"xp": mission.get("xp",0), "cash": mission.get("cash",0),
             "credits": mission.get("credits",0), "cosmetic": new_cosmetic}, "level": level_info}
 
+# ── AUTH (Phase 1) ────────────────────────────────────────────────────────────
+import auth as auth_module
+
+auth_module.init_auth(db)
+api_router.include_router(auth_module.auth_router)
+
+@app.on_event("startup")
+async def _ensure_indexes() -> None:
+    """Crée les index nécessaires au multi-tenant (idempotent)."""
+    try:
+        await db.users.create_index("email", unique=True)
+    except Exception as e:
+        logger.warning(f"index users.email: {e}")
+
+    # Wipe legacy single-tenant data: opt-in via env var pour éviter une perte
+    # accidentelle au redéploiement. Mettre WIPE_LEGACY=1 une seule fois.
+    if os.environ.get("WIPE_LEGACY") == "1":
+        logger.warning("WIPE_LEGACY=1 — purge des collections game_state/parcels/activity_log")
+        await db.game_state.delete_many({})
+        await db.parcels.delete_many({})
+        await db.activity_log.delete_many({})
+
 app.include_router(api_router)
