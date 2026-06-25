@@ -99,6 +99,17 @@ export function Topbar() {
                 <Calendar className="h-4 w-4 text-stone-600" strokeWidth={1.7} />
                 <span className="text-xs font-medium text-stone-700">Jour {state?.day}</span>
               </div>
+              <button
+                type="button"
+                onClick={handleNextDay}
+                disabled={ticking}
+                data-testid="topbar-next-day"
+                title="Avancer d'un jour"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white shadow-sm transition-colors"
+              >
+                {ticking ? <Loader2 className="h-4 w-4 animate-spin" /> : <FastForward className="h-4 w-4" strokeWidth={2} />}
+                <span className="hidden sm:inline text-xs font-semibold">Jour suivant</span>
+              </button>
               <div
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-800 text-white shadow-sm"
                 data-testid="topbar-cash"
