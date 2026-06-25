@@ -38,27 +38,37 @@ export function GameProvider({ children }) {
   // ── Auto-claim : dès qu'une mission est complétée, on la réclame ─────────
   const autoClaimMissions = useCallback(async (missions) => {
     if (!missions || missions.length === 0) return;
-    for (const m of missions) {
-      if (m.completed && !m.claimed && !claimingRef.current.has(m.instance_id)) {
-        claimingRef.current.add(m.instance_id);
-        try {
-          const res = await claimMission(m.instance_id);
-          const parts = [];
-          if (res.rewards?.xp)      parts.push(`+${res.rewards.xp} XP`);
-          if (res.rewards?.cash)     parts.push(`+${res.rewards.cash}€`);
-          if (res.rewards?.credits)  parts.push(`+${res.rewards.credits} crédits`);
-          toast.success(`🎯 ${m.title} — ${parts.join(" · ")}`, { duration: 4000 });
-          if (res.rewards?.cosmetic) {
-            toast.success(`✦ Débloqué: ${res.rewards.cosmetic.name}`, { duration: 5000 });
-          }
-          // Level up notification
-          if (res.level?.level > data.level?.level) {
-            toast.success(`⭐ Niveau ${res.level.level} atteint ! ${res.level.next_unlock ? `Nouveau: ${res.level.next_unlock.desc}` : ""}`, { duration: 6000 });
-          }
-        } catch (e) {
-          // Mission déjà réclamée ou erreur silencieuse
-          claimingRef.current.delete(m.instance_id);
-        }
+    const claimable = missions.filter(
+      (m) => m.completed && !m.claimed && !claimingRef.current.has(m.instance_id)
+    );
+    if (claimable.length === 0) return;
+    claimable.forEach((m) => claimingRef.current.add(m.instance_id));
+
+    const results = await Promise.allSettled(
+      claimable.map((m) => claimMission(m.instance_id).then((res) => ({ m, res })))
+    );
+
+    for (const r of results) {
+      if (r.status !== "fulfilled") {
+        // Libère le verrou pour permettre un nouvel essai au prochain refresh
+        const failed = claimable[results.indexOf(r)];
+        if (failed) claimingRef.current.delete(failed.instance_id);
+        continue;
+      }
+      const { m, res } = r.value;
+      const parts = [];
+      if (res.rewards?.xp)      parts.push(`+${res.rewards.xp} XP`);
+      if (res.rewards?.cash)    parts.push(`+${res.rewards.cash}€`);
+      if (res.rewards?.credits) parts.push(`+${res.rewards.credits} crédits`);
+      toast.success(`🎯 ${m.title} — ${parts.join(" · ")}`, { duration: 4000 });
+      if (res.rewards?.cosmetic) {
+        toast.success(`✦ Débloqué: ${res.rewards.cosmetic.name}`, { duration: 5000 });
+      }
+      if (res.level?.level > data.level?.level) {
+        toast.success(
+          `⭐ Niveau ${res.level.level} atteint ! ${res.level.next_unlock ? `Nouveau: ${res.level.next_unlock.desc}` : ""}`,
+          { duration: 6000 }
+        );
       }
     }
   }, [data.level]);
@@ -108,8 +118,20 @@ export function GameProvider({ children }) {
 
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, 8000); // 8s au lieu de 6s
-    return () => clearInterval(id);
+    let id = setInterval(refresh, 8000);
+    const onVisibility = () => {
+      if (document.hidden) {
+        clearInterval(id);
+      } else {
+        refresh();
+        id = setInterval(refresh, 8000);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [refresh]);
 
   return (
