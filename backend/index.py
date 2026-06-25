@@ -19,7 +19,7 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
-from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -49,6 +49,19 @@ app.add_middleware(
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("farmtycoon")
+
+@app.exception_handler(Exception)
+async def unexpected_error_handler(request: Request, exc: Exception):
+    logger.exception("Erreur API non gérée sur %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=503,
+        content={
+            "ok": False,
+            "fallback": True,
+            "error": "SERVER_RESTARTING",
+            "detail": "Serveur en cours de redémarrage. Réessayez dans quelques secondes.",
+        },
+    )
 
 # ── Spécialisations ───────────────────────────────────────────────────────────
 SPECIALIZATIONS = {
