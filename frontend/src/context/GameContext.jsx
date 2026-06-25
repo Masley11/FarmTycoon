@@ -31,6 +31,8 @@ const DEFAULT_DATA = {
 };
 
 export function GameProvider({ children }) {
+  const { user, hasCompany, logout } = useAuth();
+  const navigate = useNavigate();
   const [data, setData]       = useState(DEFAULT_DATA);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
