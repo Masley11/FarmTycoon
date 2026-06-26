@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 # ── CONSTANTS ─────────────────────────────────────────────────────────────────
-SECONDS_PER_GAME_DAY = 10
+SECONDS_PER_GAME_DAY = 20
 STARTING_CASH = 25000.0
 
 # ── SAISONS ───────────────────────────────────────────────────────────────────

@@ -37,6 +37,8 @@ export function GameProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const lastTicksRef          = useRef(0);
+  const lastSeasonRef         = useRef(null);
+  const lastDayRef            = useRef(null);
   const claimingRef           = useRef(new Set()); // évite les double-claims
 
   // ── Auto-claim : dès qu'une mission est complétée, on la réclame ─────────
@@ -111,10 +113,14 @@ export function GameProvider({ children }) {
       setData(merged);
       setError(null);
 
-      if (res.ticks_applied > 0 && lastTicksRef.current !== 0) {
-        const si = merged.season;
-        toast.info(`${si.season_icon} ${si.display}`, { duration: 3000 });
+      // Toast uniquement lors d'un changement de saison — plus de spam à chaque tick.
+      const si = merged.season;
+      const seasonKey = si?.season_key ? `${si.year}-${si.season_key}` : null;
+      if (seasonKey && lastSeasonRef.current && lastSeasonRef.current !== seasonKey) {
+        toast.info(`${si.season_icon || "🗓️"} ${si.display}`, { duration: 3500 });
       }
+      if (seasonKey) lastSeasonRef.current = seasonKey;
+      lastDayRef.current = merged.state?.day ?? lastDayRef.current;
       lastTicksRef.current = res.ticks_applied ?? 0;
 
       await autoClaimMissions(merged.missions);
