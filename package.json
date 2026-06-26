@@ -3,8 +3,8 @@
   "scripts": {
     "dev": "cd frontend && HOST=0.0.0.0 PORT=8080 bun run start",
     "start": "cd frontend && HOST=0.0.0.0 PORT=8080 bun run start",
-    "build": "cd frontend && bun run build",
-    "build:dev": "cd frontend && bun run build",
+    "build": "cd frontend && bun install && bun run build",
+    "build:dev": "cd frontend && bun install && bun run build",
     "test": "cd frontend && bun run test"
   }
 }
