@@ -37,6 +37,8 @@ export function GameProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const lastTicksRef          = useRef(0);
+  const lastSeasonRef         = useRef(null);
+  const lastDayRef            = useRef(null);
   const claimingRef           = useRef(new Set()); // évite les double-claims
 
   // ── Auto-claim : dès qu'une mission est complétée, on la réclame ─────────
