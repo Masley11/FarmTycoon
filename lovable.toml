@@ -1,0 +1,6 @@
+# Project shipped as legacy CRA (frontend/) + FastAPI (backend/), deployed on Vercel.
+# Lovable preview is not used. We provide a no-op build:dev to satisfy the pipeline.
+[scripts]
+"build:dev" = "echo 'build:dev skipped (legacy CRA, deployed via Vercel)'"
+"dev"       = "bun run dev"
+"build"     = "bun run build"
