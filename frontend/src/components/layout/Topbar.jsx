@@ -79,7 +79,11 @@ export function Topbar() {
               )}
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-stone-50 border border-stone-200" data-testid="topbar-day">
                 <Calendar className="h-4 w-4 text-stone-600" strokeWidth={1.7} />
-                <span className="text-xs font-medium text-stone-700">Jour {state?.day}</span>
+                <span className="text-xs font-medium text-stone-700">
+                  {data?.season?.season_icon || "🗓️"} {data?.season?.display
+                    ? `An ${data.season.year} · ${data.season.season_name} J${data.season.season_day}/30`
+                    : `Jour ${state?.day ?? 1}`}
+                </span>
               </div>
               <div
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-800 text-white shadow-sm"

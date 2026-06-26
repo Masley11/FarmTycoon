@@ -143,7 +143,13 @@ async def _auto_tick(user_id: str, state, parcels):
 
     state["last_tick_at"] = last_tick_at
     pending = gl.compute_pending_days(state)
-    days    = min(pending, 30)
+    # Anti-runaway : après un redémarrage serveur ou une longue inactivité,
+    # on ne déroule jamais plus de 2 jours d'un coup. Le reste du temps écoulé
+    # est "absorbé" en recalant l'horloge sur maintenant, sinon le jeu pourrait
+    # sauter plusieurs années et ruiner la trésorerie.
+    MAX_DAYS_PER_TICK = 2
+    days = min(pending, MAX_DAYS_PER_TICK)
+    clamped = pending > MAX_DAYS_PER_TICK
     if days > 0:
         growth_mult = _spec_mult(state, "growth_mult")
         summary = gl.process_ticks(state, parcels, days)
@@ -151,9 +157,20 @@ async def _auto_tick(user_id: str, state, parcels):
             for p in parcels:
                 if p.get("crop_type") and p.get("growth", 0) < 100:
                     p["growth"] = min(100, round(p["growth"] * growth_mult, 2))
-        # Avance last_tick_at de N * SECONDS_PER_GAME_DAY (au lieu de "now")
-        # pour ne pas perdre les fractions de seconde accumulées.
-        state["last_tick_at"] = last_tick_at + timedelta(seconds=days * gl.SECONDS_PER_GAME_DAY)
+        if clamped:
+            # On jette le temps non utilisé et on recale sur "maintenant" pour
+            # repartir sur une base saine. On rétablit aussi une trésorerie
+            # positive si elle a plongé pendant les ticks autorisés.
+            state["last_tick_at"] = gl.now_utc()
+            if state.get("cash", 0) < gl.STARTING_CASH:
+                state["cash"] = float(gl.STARTING_CASH)
+                await _log_activity(
+                    user_id,
+                    "Trésorerie restaurée après une longue absence du serveur.",
+                    "info", state["day"],
+                )
+        else:
+            state["last_tick_at"] = last_tick_at + timedelta(seconds=days * gl.SECONDS_PER_GAME_DAY)
         for act in summary["activities"]:
             await _log_activity(user_id, act["message"], act["type"], act["day"])
         await _save_state(user_id, state)
